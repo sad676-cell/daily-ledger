@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { KindSwitch } from '../components/KindSwitch';
 import { MonthStepper } from '../components/MonthStepper';
 import { Entry, IconName, Kind, categoryOf } from '../types';
 import { formatAmount } from '../money';
+import { exportMonthPdf } from '../pdf';
 import { palette, num, radius, space, type } from '../theme';
 
 type Row = {
@@ -23,6 +24,7 @@ type Props = {
 
 export function StatsScreen({ entries, month, onMonthChange }: Props) {
   const [kind, setKind] = useState<Kind>('expense');
+  const [exporting, setExporting] = useState(false);
 
   const monthEntries = useMemo(
     () => entries.filter((e) => e.date.startsWith(month)),
@@ -38,6 +40,20 @@ export function StatsScreen({ entries, month, onMonthChange }: Props) {
     }
     return { expense, income };
   }, [monthEntries]);
+
+  const handleExport = async () => {
+    if (exporting) return;
+    if (Platform.OS === 'web') {
+      Alert.alert('手机上才能导出', 'PDF 导出在 iOS / Android 上可用，浏览器预览里不支持。');
+      return;
+    }
+    setExporting(true);
+    const result = await exportMonthPdf(entries, month);
+    setExporting(false);
+    if (result === 'failed') {
+      Alert.alert('导出失败', '生成 PDF 时出错了，请再试一次。');
+    }
+  };
 
   const breakdown = useMemo(() => {
     const map = new Map<string, number>();
@@ -133,6 +149,23 @@ export function StatsScreen({ entries, month, onMonthChange }: Props) {
           ))}
         </View>
       )}
+
+      <Pressable
+        onPress={handleExport}
+        disabled={exporting}
+        accessibilityRole="button"
+        accessibilityLabel="导出本月 PDF"
+        style={({ pressed }) => [styles.export, pressed && styles.exportPressed]}
+      >
+        <Ionicons
+          name="document-text-outline"
+          size={16}
+          color={exporting ? palette.ink3 : palette.ink}
+        />
+        <Text style={[type.small, styles.exportText]}>
+          {exporting ? '正在生成…' : '导出本月 PDF'}
+        </Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -253,5 +286,24 @@ const styles = StyleSheet.create({
     color: palette.ink3,
     textAlign: 'center',
     maxWidth: 260,
+  },
+  export: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.sm,
+    height: 48,
+    marginTop: space.xxl,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.hair,
+    backgroundColor: palette.surface,
+  },
+  exportPressed: {
+    backgroundColor: palette.hairSoft,
+  },
+  exportText: {
+    color: palette.ink,
+    fontWeight: '500',
   },
 });

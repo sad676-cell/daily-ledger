@@ -42,3 +42,6 @@ yarn-error.*
 
 # local scratch
 .tmp-test/
+
+# 本地产物
+dist/

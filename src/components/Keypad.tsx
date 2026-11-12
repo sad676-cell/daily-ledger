@@ -1,40 +1,22 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { palette, num, space, type } from '../theme';
+import { palette, num, type } from '../theme';
 
-type KeySpec = {
-  id: string;
-  label?: string;
-  icon?: 'backspace-outline';
-  tone: 'digit' | 'operator' | 'muted';
-};
-
-const KEYS: KeySpec[] = [
-  { id: '1', tone: 'digit' },
-  { id: '2', tone: 'digit' },
-  { id: '3', tone: 'digit' },
-  { id: '+', label: '+', tone: 'operator' },
-  { id: '4', tone: 'digit' },
-  { id: '5', tone: 'digit' },
-  { id: '6', tone: 'digit' },
-  { id: '-', label: '−', tone: 'operator' },
-  { id: '7', tone: 'digit' },
-  { id: '8', tone: 'digit' },
-  { id: '9', tone: 'digit' },
-  { id: 'backspace', icon: 'backspace-outline', tone: 'operator' },
-  { id: '.', label: '.', tone: 'digit' },
-  { id: '0', label: '0', tone: 'digit' },
-  { id: '00', label: '00', tone: 'digit' },
-  { id: 'C', label: 'C', tone: 'muted' },
+/** 左侧 3×4 数字区，行高 54。 */
+const DIGIT_ROWS: string[][] = [
+  ['1', '2', '3'],
+  ['4', '5', '6'],
+  ['7', '8', '9'],
+  ['.', '0', '00'],
 ];
 
-const COLUMNS = 4;
+/** 右侧竖排：加、减、退格。没有清空键。 */
+const RAIL: ('+' | '-' | 'backspace')[] = ['+', '-', 'backspace'];
 
-const ACCESSIBILITY: Record<string, string> = {
+const LABELS: Record<string, string> = {
   '+': '加',
   '-': '减',
   '.': '小数点',
-  C: '清空',
   '00': '两个零',
   backspace: '退格',
 };
@@ -43,61 +25,73 @@ type Props = {
   onKey: (key: string) => void;
 };
 
-/** 账本格线感的键盘：只有细线，没有圆角块。右侧一列是运算符和编辑键。 */
 export function Keypad({ onKey }: Props) {
-  const rows: KeySpec[][] = [];
-  for (let i = 0; i < KEYS.length; i += COLUMNS) rows.push(KEYS.slice(i, i + COLUMNS));
-
   return (
     <View style={styles.pad}>
-      {rows.map((row, rowIndex) => (
-        <View key={rowIndex} style={styles.row}>
-          {row.map((key, colIndex) => {
-            const lastCol = colIndex === row.length - 1;
-            const lastRow = rowIndex === rows.length - 1;
-            return (
-              <Pressable
-                key={key.id}
-                onPress={() => onKey(key.id)}
-                accessibilityRole="button"
-                accessibilityLabel={ACCESSIBILITY[key.id] ?? key.label ?? key.id}
-                style={({ pressed }) => [
-                  styles.key,
-                  !lastCol && styles.cellRight,
-                  !lastRow && styles.cellBottom,
-                  pressed && styles.keyPressed,
-                ]}
-              >
-                {key.icon ? (
-                  <Ionicons name={key.icon} size={20} color={palette.ink2} />
-                ) : (
-                  <Text
-                    style={[
-                      type.title,
-                      num,
-                      styles.keyText,
-                      key.tone === 'operator' && styles.keyOperator,
-                      key.tone === 'muted' && styles.keyMuted,
-                    ]}
-                  >
-                    {key.label ?? key.id}
-                  </Text>
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
-      ))}
+      <View style={styles.digits}>
+        {DIGIT_ROWS.map((row, rowIndex) => (
+          <View key={rowIndex} style={styles.row}>
+            {row.map((key, colIndex) => {
+              const lastCol = colIndex === row.length - 1;
+              const lastRow = rowIndex === DIGIT_ROWS.length - 1;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => onKey(key)}
+                  accessibilityRole="button"
+                  accessibilityLabel={LABELS[key] ?? key}
+                  style={({ pressed }) => [
+                    styles.key,
+                    !lastCol && styles.cellRight,
+                    !lastRow && styles.cellBottom,
+                    pressed && styles.keyPressed,
+                  ]}
+                >
+                  <Text style={[type.title, num, styles.keyText]}>{key}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.rail}>
+        {RAIL.map((key, index) => {
+          const isBackspace = key === 'backspace';
+          return (
+            <Pressable
+              key={key}
+              onPress={() => onKey(key)}
+              accessibilityRole="button"
+              accessibilityLabel={LABELS[key]}
+              style={({ pressed }) => [
+                styles.railKey,
+                index !== RAIL.length - 1 && styles.cellBottom,
+                pressed && styles.keyPressed,
+              ]}
+            >
+              {isBackspace ? (
+                <Ionicons name="backspace-outline" size={20} color={palette.ink2} />
+              ) : (
+                <Text style={[type.title, num, styles.railText]}>{key === '-' ? '−' : key}</Text>
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   pad: {
+    flexDirection: 'row',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderColor: palette.hair,
     backgroundColor: palette.paper,
-    paddingBottom: space.sm,
+  },
+  digits: {
+    flex: 1,
   },
   row: {
     flexDirection: 'row',
@@ -116,11 +110,20 @@ const styles = StyleSheet.create({
     color: palette.ink,
     fontWeight: '500',
   },
-  keyOperator: {
-    color: palette.ink2,
+  rail: {
+    width: 84,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.hair,
   },
-  keyMuted: {
-    color: palette.ink3,
+  railKey: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  railText: {
+    ...num,
+    color: palette.ink2,
+    fontWeight: '500',
   },
   cellRight: {
     borderRightWidth: StyleSheet.hairlineWidth,
