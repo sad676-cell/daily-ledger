@@ -104,6 +104,7 @@ export function LedgerScreen({ entries, month, onMonthChange, onEdit }: Props) {
       renderItem={({ item }) => {
         const category = categoryOf(item.categoryId);
         const isIncome = item.kind === 'income';
+        const sub = [item.note, item.expr].filter(Boolean).join('  ·  ');
         return (
           <Pressable
             onPress={() => onEdit(item)}
@@ -118,11 +119,11 @@ export function LedgerScreen({ entries, month, onMonthChange, onEdit }: Props) {
               <Text style={[type.body, styles.rowTitle]} numberOfLines={1}>
                 {category.name}
               </Text>
-              {item.note ? (
+              {sub && (
                 <Text style={[type.small, styles.rowNote]} numberOfLines={1}>
-                  {item.note}
+                  {sub}
                 </Text>
-              ) : null}
+              )}
             </View>
             <Text style={[type.body, num, styles.rowAmount, isIncome && styles.rowAmountIncome]}>
               {isIncome ? '+' : '−'}

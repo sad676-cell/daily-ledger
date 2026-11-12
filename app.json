@@ -10,13 +10,13 @@
     "backgroundColor": "#F5F1E8",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourname.ledger",
+      "bundleIdentifier": "com.ljq471.ledger",
       "infoPlist": {
         "CFBundleDisplayName": "账本"
       }
     },
     "android": {
-      "package": "com.yourname.ledger",
+      "package": "com.ljq471.ledger",
       "adaptiveIcon": {
         "backgroundColor": "#F5F1E8",
         "foregroundImage": "./assets/android-icon-foreground.png",

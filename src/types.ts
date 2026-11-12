@@ -20,6 +20,8 @@ export type Entry = {
   /** YYYY-MM-DD，按本地时区 */
   date: string;
   createdAt: number;
+  /** 记这笔时输入的算式，例如 "12.5 + 8 + 3"，用于以后回看怎么算的 */
+  expr?: string;
 };
 
 export const EXPENSE_CATEGORIES: Category[] = [

@@ -93,6 +93,13 @@ export function EntrySheet({ visible, initial, defaultDate, onSave, onDelete, on
   const handleSave = () => {
     if (!canSave) return;
     Keyboard.dismiss();
+    // 金额没改时保留原来的算式，只改备注不该丢掉当时的算法。
+    const amountUnchanged = initial ? Math.abs(amount - initial.amount) < 0.005 : false;
+    const savedExpr = hasOperator(expr)
+      ? prettyExpr(expr)
+      : amountUnchanged
+        ? initial?.expr
+        : undefined;
     const entry: Entry = {
       id: initial?.id ?? makeId(),
       kind,
@@ -101,6 +108,7 @@ export function EntrySheet({ visible, initial, defaultDate, onSave, onDelete, on
       note: note.trim(),
       date,
       createdAt: initial?.createdAt ?? Date.now(),
+      expr: savedExpr,
     };
     onSave(entry);
     onClose();
