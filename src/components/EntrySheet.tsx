@@ -75,12 +75,12 @@ export function EntrySheet({ visible, initial, defaultDate, onSave, onDelete, on
   const pressKey = (key: string) => {
     setExpr((prev) => {
       switch (key) {
-        case 'C':
-          return '';
         case 'backspace':
           return prev.slice(0, -1);
         case '+':
         case '-':
+        case '×':
+        case '÷':
           return pushOperator(prev, key);
         case '.':
           return pushDot(prev);

@@ -86,26 +86,85 @@ export function formatTyping(raw: string): string {
   return raw.includes('.') ? `${grouped}.${dec ?? ''}` : grouped;
 }
 
-/* ---------- 金额算式：允许 12.5+3-2 这种写法 ---------- */
+/* ---------- 金额算式：允许 12.5+3−2、12×3、260÷4 这种写法 ---------- */
+
+export type Op = '+' | '-' | '×' | '÷';
+
+const OPERATORS = ['+', '-', '×', '÷'] as const;
+
+const isOp = (ch: string): ch is Op => (OPERATORS as readonly string[]).includes(ch);
 
 export function hasOperator(expr: string): boolean {
-  return expr.includes('+') || expr.includes('-');
+  return [...expr].some((ch) => isOp(ch));
 }
 
 /** 当前正在输入的那一项（最后一个运算符之后的部分）。 */
 function lastTerm(expr: string): { head: string; term: string } {
-  const cut = Math.max(expr.lastIndexOf('+'), expr.lastIndexOf('-'));
+  let cut = -1;
+  for (let i = expr.length - 1; i >= 0; i--) {
+    if (isOp(expr[i])) {
+      cut = i;
+      break;
+    }
+  }
   return { head: expr.slice(0, cut + 1), term: expr.slice(cut + 1) };
 }
 
-/** 把算式算成一个数，只做加减，最后一步四舍五入到分。 */
+type Token = { kind: 'num'; value: number } | { kind: 'op'; op: Op };
+
+function tokenize(expr: string): Token[] {
+  const tokens: Token[] = [];
+  let buffer = '';
+  for (const ch of expr) {
+    if (isOp(ch)) {
+      if (buffer) {
+        tokens.push({ kind: 'num', value: Number(buffer) });
+        buffer = '';
+      }
+      tokens.push({ kind: 'op', op: ch });
+    } else {
+      buffer += ch;
+    }
+  }
+  if (buffer) tokens.push({ kind: 'num', value: Number(buffer) });
+  return tokens;
+}
+
+/**
+ * 求值：先乘除后加减，最后四舍五入到分。
+ * 除数为 0 时按「这一步不生效」处理，不会把整个金额变成 Infinity。
+ */
 export function evaluateExpr(expr: string): number {
   if (!expr) return 0;
-  const tokens = expr.match(/[+-]?[^+-]+/g) ?? [];
+  const tokens = tokenize(expr);
+
+  // 第一遍：× ÷
+  const folded: Token[] = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (token.kind === 'op' && (token.op === '×' || token.op === '÷')) {
+      const left = folded.pop();
+      const right = tokens[i + 1];
+      const l = left && left.kind === 'num' ? left.value : 0;
+      const r = right && right.kind === 'num' ? right.value : 0;
+      const value =
+        token.op === '×' ? l * r : r === 0 ? l : l / r;
+      folded.push({ kind: 'num', value });
+      i++; // 跳过右操作数
+    } else {
+      folded.push(token);
+    }
+  }
+
+  // 第二遍：+ −
   let total = 0;
-  for (const token of tokens) {
-    const value = Number(token);
-    if (Number.isFinite(value)) total += value;
+  let sign = 1;
+  for (const token of folded) {
+    if (token.kind === 'num') {
+      total += sign * token.value;
+    } else {
+      sign = token.op === '-' ? -1 : 1;
+    }
   }
   return Math.round(total * 100) / 100;
 }
@@ -133,16 +192,23 @@ export function pushDot(expr: string): string {
   return head + (term === '' ? '0.' : `${term}.`);
 }
 
-export function pushOperator(expr: string, op: '+' | '-'): string {
+export function pushOperator(expr: string, op: Op): string {
   if (!expr) return '';
   const last = expr[expr.length - 1];
-  if (last === '+' || last === '-') return expr.slice(0, -1) + op;
+  if (isOp(last)) return expr.slice(0, -1) + op;
   if (last === '.') return expr.slice(0, -1) + op;
   return expr + op;
 }
 
 /** 给界面看的算式：运算符两侧加空格，减号用排版减号。 */
 export function prettyExpr(expr: string): string {
-  return expr.replace(/\+/g, ' + ').replace(/-/g, ' − ');
+  return expr
+    .replace(/\+/g, ' + ')
+    .replace(/-/g, ' − ')
+    .replace(/×/g, ' × ')
+    .replace(/÷/g, ' ÷ ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
+
 
