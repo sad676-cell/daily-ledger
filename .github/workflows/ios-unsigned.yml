@@ -50,9 +50,13 @@ jobs:
         continue-on-error: true
         name: Install JS dependencies
         run: |
-          npm ci > /tmp/npm.log 2>&1
-          echo "NPM_EXIT=$?"
+          # lock 里的 resolved 指向国内镜像，runner 在海外，临时切到官方源（integrity 不变）
+          sed -i.bak 's|https://registry.npmmirror.com|https://registry.npmjs.org|g' package-lock.json
+          npm ci --no-audit --no-fund > /tmp/npm.log 2>&1
+          code=$?
+          echo "NPM_EXIT=$code"
           tail -n 15 /tmp/npm.log
+          exit $code
 
       - id: prebuild
         continue-on-error: true
