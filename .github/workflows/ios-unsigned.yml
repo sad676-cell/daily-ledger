@@ -65,7 +65,17 @@ jobs:
         if: steps.build.outcome == 'failure'
         run: |
           mkdir -p ci
-          tail -n 600 build.log > ci/last-build.log
+          {
+            echo "### total lines"
+            wc -l build.log
+            echo "### around ExpoModulesJSI"
+            awk '/Build ExpoModulesJSI xcframework/{flag=1} flag' build.log | head -n 400
+            echo "### error-ish lines"
+            grep -n -i -E '(error:| error |failed|Command PhaseScript)' build.log | head -n 80
+            echo "### tail"
+            tail -n 120 build.log
+          } > ci/last-build.log
+          wc -c ci/last-build.log
           git config user.name "ci-bot"
           git config user.email "ci-bot@users.noreply.github.com"
           git checkout -b ci-log
