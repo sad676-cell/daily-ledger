@@ -28,6 +28,19 @@ jobs:
       - name: Install JS dependencies
         run: npm ci
 
+      - name: Select newest Xcode
+        run: |
+          echo "=== installed ==="
+          ls -d /Applications/Xcode*.app 2>/dev/null || true
+          newest=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -n "$newest" ]; then
+            echo "=== selecting $newest ==="
+            sudo xcode-select -s "$newest"
+          fi
+          xcodebuild -version
+          echo "=== swift ==="
+          swift --version 2>&1 | head -n 2
+
       - name: Generate native iOS project
         run: npx expo prebuild --platform ios --clean --no-install
 
