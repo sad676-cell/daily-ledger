@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Keypad } from './Keypad';
 import { KindSwitch } from './KindSwitch';
 import { categoriesFor, Category, Kind, Entry } from '../types';
-import { dateChip, daysAgo, formatTyping, shiftISO } from '../money';
+import { dateChip, daysAgo, evaluateExpr, formatAmount, hasOperator, prettyExpr, pushDigit, pushDot, pushOperator, shiftISO } from '../money';
 import { palette, num, radius, space, type } from '../theme';
 
 type Props = {
@@ -35,7 +35,7 @@ function makeId(): string {
 export function EntrySheet({ visible, initial, defaultDate, onSave, onDelete, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const [kind, setKind] = useState<Kind>('expense');
-  const [amountRaw, setAmountRaw] = useState('');
+  const [expr, setExpr] = useState('');
   const [categoryId, setCategoryId] = useState('food');
   const [note, setNote] = useState('');
   const [date, setDate] = useState(defaultDate);
@@ -50,20 +50,20 @@ export function EntrySheet({ visible, initial, defaultDate, onSave, onDelete, on
     setConfirmingDelete(false);
     if (initial) {
       setKind(initial.kind);
-      setAmountRaw(String(initial.amount));
+      setExpr(String(initial.amount));
       setCategoryId(initial.categoryId);
       setNote(initial.note);
       setDate(initial.date);
     } else {
       setKind('expense');
-      setAmountRaw('');
+      setExpr('');
       setCategoryId(categoriesFor('expense')[0].id);
       setNote('');
       setDate(defaultDate);
     }
   }, [visible, initial, defaultDate]);
 
-  const amount = Number(amountRaw) || 0;
+  const amount = evaluateExpr(expr);
   const canSave = amount > 0;
 
   const handleKind = (next: Kind) => {
@@ -73,20 +73,20 @@ export function EntrySheet({ visible, initial, defaultDate, onSave, onDelete, on
   };
 
   const pressKey = (key: string) => {
-    setAmountRaw((prev) => {
-      if (key === 'backspace') return prev.slice(0, -1);
-      if (key === '.') {
-        if (prev.includes('.')) return prev;
-        return prev === '' ? '0.' : `${prev}.`;
+    setExpr((prev) => {
+      switch (key) {
+        case 'C':
+          return '';
+        case 'backspace':
+          return prev.slice(0, -1);
+        case '+':
+        case '-':
+          return pushOperator(prev, key);
+        case '.':
+          return pushDot(prev);
+        default:
+          return pushDigit(prev, key);
       }
-      if (prev.includes('.')) {
-        const dec = prev.split('.')[1] ?? '';
-        if (dec.length >= 2) return prev;
-        return prev + key;
-      }
-      if (prev === '0') return key;
-      if (prev.length >= 8) return prev;
-      return prev + key;
     });
   };
 
@@ -147,11 +147,23 @@ export function EntrySheet({ visible, initial, defaultDate, onSave, onDelete, on
           >
             <KindSwitch value={kind} onChange={handleKind} />
 
-            <View style={styles.amountRow}>
-              <Text style={[type.title, styles.yen]}>¥</Text>
-              <Text style={[type.hero, num, amountRaw ? styles.amount : styles.amountEmpty]}>
-                {formatTyping(amountRaw)}
+            <View style={styles.amountBlock}>
+              <Text style={[type.small, styles.exprLine]} numberOfLines={1}>
+                {hasOperator(expr) ? prettyExpr(expr) : ' '}
               </Text>
+              <View style={styles.amountRow}>
+                <Text style={[type.title, styles.yen]}>¥</Text>
+                <Text
+                  style={[
+                    type.hero,
+                    num,
+                    expr ? styles.amount : styles.amountEmpty,
+                    amount < 0 && styles.amountNegative,
+                  ]}
+                >
+                  {formatAmount(amount)}
+                </Text>
+              </View>
             </View>
 
             <View style={styles.grid}>
@@ -287,6 +299,15 @@ const styles = StyleSheet.create({
     paddingBottom: space.xl,
     gap: space.xl,
   },
+  amountBlock: {
+    alignItems: 'center',
+    gap: space.xs,
+  },
+  exprLine: {
+    ...num,
+    color: palette.ink3,
+    minHeight: 20,
+  },
   amountRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -302,6 +323,9 @@ const styles = StyleSheet.create({
   },
   amountEmpty: {
     color: palette.ink3,
+  },
+  amountNegative: {
+    color: palette.accent,
   },
   grid: {
     flexDirection: 'row',

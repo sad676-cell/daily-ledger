@@ -85,3 +85,64 @@ export function formatTyping(raw: string): string {
   const grouped = (int === '' ? '0' : int).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return raw.includes('.') ? `${grouped}.${dec ?? ''}` : grouped;
 }
+
+/* ---------- 金额算式：允许 12.5+3-2 这种写法 ---------- */
+
+export function hasOperator(expr: string): boolean {
+  return expr.includes('+') || expr.includes('-');
+}
+
+/** 当前正在输入的那一项（最后一个运算符之后的部分）。 */
+function lastTerm(expr: string): { head: string; term: string } {
+  const cut = Math.max(expr.lastIndexOf('+'), expr.lastIndexOf('-'));
+  return { head: expr.slice(0, cut + 1), term: expr.slice(cut + 1) };
+}
+
+/** 把算式算成一个数，只做加减，最后一步四舍五入到分。 */
+export function evaluateExpr(expr: string): number {
+  if (!expr) return 0;
+  const tokens = expr.match(/[+-]?[^+-]+/g) ?? [];
+  let total = 0;
+  for (const token of tokens) {
+    const value = Number(token);
+    if (Number.isFinite(value)) total += value;
+  }
+  return Math.round(total * 100) / 100;
+}
+
+export function pushDigit(expr: string, digits: string): string {
+  const { head, term } = lastTerm(expr);
+  if (term.includes('.')) {
+    const dec = term.split('.')[1] ?? '';
+    const room = 2 - dec.length;
+    if (room <= 0) return expr;
+    return head + term + digits.slice(0, room);
+  }
+  if (term === '' || term === '0') {
+    const trimmed = digits.replace(/^0+/, '');
+    return head + (trimmed === '' ? '0' : trimmed);
+  }
+  const room = 8 - term.length;
+  if (room <= 0) return expr;
+  return head + term + digits.slice(0, room);
+}
+
+export function pushDot(expr: string): string {
+  const { head, term } = lastTerm(expr);
+  if (term.includes('.')) return expr;
+  return head + (term === '' ? '0.' : `${term}.`);
+}
+
+export function pushOperator(expr: string, op: '+' | '-'): string {
+  if (!expr) return '';
+  const last = expr[expr.length - 1];
+  if (last === '+' || last === '-') return expr.slice(0, -1) + op;
+  if (last === '.') return expr.slice(0, -1) + op;
+  return expr + op;
+}
+
+/** 给界面看的算式：运算符两侧加空格，减号用排版减号。 */
+export function prettyExpr(expr: string): string {
+  return expr.replace(/\+/g, ' + ').replace(/-/g, ' − ');
+}
+
