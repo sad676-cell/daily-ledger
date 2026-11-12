@@ -1,12 +1,16 @@
 name: iOS unsigned ipa
 
 # 云端 macOS 只负责编译，签名留给你在 Windows 上用 Sideloadly 做。
-# 产物：Actions 页面里的 Ledger-unsigned.ipa
+# 产物：Actions 页面里的 Ledger-unsigned-ipa
+# 失败时：把构建日志推到 ci-log 分支，方便本地排查
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -31,17 +35,47 @@ jobs:
         run: cd ios && pod install
 
       - name: Build without code signing
+        id: build
+        continue-on-error: true
         run: |
-          xcodebuild \
-            -workspace ios/Ledger.xcworkspace \
-            -scheme Ledger \
-            -configuration Release \
-            -sdk iphoneos \
-            -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            build
+          set +e
+          {
+            echo "=== ios/ ==="
+            ls -1 ios
+            echo "=== schemes ==="
+            xcodebuild -list -workspace ios/Ledger.xcworkspace
+            echo "=== build ==="
+            xcodebuild \
+              -workspace ios/Ledger.xcworkspace \
+              -scheme Ledger \
+              -configuration Release \
+              -destination 'generic/platform=iOS' \
+              -derivedDataPath build \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGN_IDENTITY="" \
+              build
+          } > build.log 2>&1
+          code=$?
+          echo "XCODEBUILD_EXIT=$code"
+          tail -n 250 build.log
+          exit $code
+
+      - name: Publish build log to ci-log branch
+        if: steps.build.outcome == 'failure'
+        run: |
+          mkdir -p ci
+          tail -n 600 build.log > ci/last-build.log
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git checkout -b ci-log
+          git add -f ci/last-build.log
+          git commit -m "ci: build log for ${{ github.sha }}" || true
+          git push -f origin ci-log
+
+      - name: Fail the job if the build failed
+        if: steps.build.outcome == 'failure'
+        run: exit 1
 
       - name: Package into ipa
         run: |
@@ -53,4 +87,11 @@ jobs:
         with:
           name: Ledger-unsigned-ipa
           path: Ledger-unsigned.ipa
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: build-log
+          path: build.log
           retention-days: 7
