@@ -1,17 +1,24 @@
 {
   "expo": {
-    "name": "daily-ledger",
+    "name": "Ledger",
     "slug": "daily-ledger",
+    "scheme": "ledger",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "backgroundColor": "#F5F1E8",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourname.ledger",
+      "infoPlist": {
+        "CFBundleDisplayName": "账本"
+      }
     },
     "android": {
+      "package": "com.yourname.ledger",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#F5F1E8",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
