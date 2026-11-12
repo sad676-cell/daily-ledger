@@ -72,6 +72,10 @@ jobs:
             awk '/Build ExpoModulesJSI xcframework/{flag=1} flag' build.log | head -n 400
             echo "### error-ish lines"
             grep -n -i -E '(error:| error |failed|Command PhaseScript)' build.log | head -n 80
+            echo "### xcodebuild version"
+            xcodebuild -version
+            echo "### SPM context"
+            grep -n -B 3 -A 40 "Could not resolve package dependencies" build.log
             echo "### tail"
             tail -n 120 build.log
           } > ci/last-build.log
