@@ -2,7 +2,8 @@ name: iOS unsigned ipa
 
 # 云端 macOS 只负责编译，签名留给你在 Windows 上用 Sideloadly 做。
 # 产物：Actions 页面里的 Ledger-unsigned-ipa
-# 失败时：把构建日志推到 ci-log 分支，方便本地排查
+# 诊断：每一步都 continue-on-error，最后把结果推到 ci-report 分支
+#       （github.com 的 Actions 日志需要登录才能看，git 分支不受限制）
 
 on:
   push:
@@ -20,41 +21,53 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install JS dependencies
-        run: npm ci
-
-      - name: Select newest Xcode
-        run: |
-          echo "=== installed ==="
-          ls -d /Applications/Xcode*.app 2>/dev/null || true
-          newest=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -n 1)
-          if [ -n "$newest" ]; then
-            echo "=== selecting $newest ==="
-            sudo xcode-select -s "$newest"
-          fi
-          xcodebuild -version
-          echo "=== swift ==="
-          swift --version 2>&1 | head -n 2
-
-      - name: Generate native iOS project
-        run: npx expo prebuild --platform ios --clean --no-install
-
-      - name: Install CocoaPods
-        run: cd ios && pod install
-
-      - name: Build without code signing
-        id: build
+      - id: env
         continue-on-error: true
+        name: Collect environment
+        run: |
+          {
+            echo "=== date ==="; date -u +%FT%TZ
+            echo "=== sha ==="; git rev-parse HEAD
+            echo "=== installed xcodes ==="; ls -d /Applications/Xcode*.app 2>/dev/null
+            echo "=== default xcodebuild ==="; xcodebuild -version 2>&1
+            echo "=== default swift ==="; swift --version 2>&1 | head -n 2
+          } > /tmp/env.txt 2>&1
+          cat /tmp/env.txt
+
+      - id: pick
+        continue-on-error: true
+        name: Select newest Xcode
+        run: |
+          newest=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -n 1)
+          echo "picked=$newest" >> /tmp/env.txt
+          if [ -n "$newest" ]; then sudo xcode-select -s "$newest"; fi
+          echo "=== after switch: xcodebuild ===" >> /tmp/env.txt
+          xcodebuild -version >> /tmp/env.txt 2>&1
+          echo "=== after switch: swift ===" >> /tmp/env.txt
+          swift --version >> /tmp/env.txt 2>&1
+          tail -n 8 /tmp/env.txt
+
+      - id: jsdeps
+        continue-on-error: true
+        name: Install JS dependencies
+        run: npm ci 2>&1 | tail -n 40
+
+      - id: prebuild
+        continue-on-error: true
+        name: Generate native iOS project
+        run: npx expo prebuild --platform ios --clean --no-install 2>&1 | tail -n 60
+
+      - id: pods
+        continue-on-error: true
+        name: Install CocoaPods
+        run: cd ios && pod install 2>&1 | tail -n 40
+
+      - id: build
+        continue-on-error: true
+        name: Build without code signing
         run: |
           set +e
           {
-            echo "=== ios/ ==="
-            ls -1 ios
             echo "=== schemes ==="
             xcodebuild -list -workspace ios/Ledger.xcworkspace
             echo "=== build ==="
@@ -69,56 +82,59 @@ jobs:
               CODE_SIGN_IDENTITY="" \
               build
           } > build.log 2>&1
-          code=$?
-          echo "XCODEBUILD_EXIT=$code"
-          tail -n 250 build.log
-          exit $code
+          echo "XCODEBUILD_EXIT=$?"
+          tail -n 40 build.log
 
-      - name: Publish build log to ci-log branch
-        if: steps.build.outcome == 'failure'
+      - id: package
+        continue-on-error: true
+        name: Package into ipa
+        run: |
+          mkdir -p Payload
+          APP=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' | head -n 1)
+          echo "app=$APP"
+          cp -R "$APP" Payload/
+          zip -qry Ledger-unsigned.ipa Payload
+          ls -lh Ledger-unsigned.ipa
+
+      - id: report
+        name: Publish report to ci-report branch
+        if: always()
         run: |
           mkdir -p ci
           {
-            echo "### total lines"
-            wc -l build.log
-            echo "### around ExpoModulesJSI"
-            awk '/Build ExpoModulesJSI xcframework/{flag=1} flag' build.log | head -n 400
-            echo "### error-ish lines"
-            grep -n -i -E '(error:| error |failed|Command PhaseScript)' build.log | head -n 80
-            echo "### xcodebuild version"
-            xcodebuild -version
-            echo "### SPM context"
-            grep -n -B 3 -A 40 "Could not resolve package dependencies" build.log
-            echo "### tail"
-            tail -n 120 build.log
-          } > ci/last-build.log
-          wc -c ci/last-build.log
+            echo "########## 结果 ##########"
+            echo "env      = ${{ steps.env.outcome }}"
+            echo "pick     = ${{ steps.pick.outcome }}"
+            echo "jsdeps   = ${{ steps.jsdeps.outcome }}"
+            echo "prebuild = ${{ steps.prebuild.outcome }}"
+            echo "pods     = ${{ steps.pods.outcome }}"
+            echo "build    = ${{ steps.build.outcome }}"
+            echo "package  = ${{ steps.package.outcome }}"
+            echo
+            echo "########## 环境 ##########"
+            cat /tmp/env.txt 2>/dev/null || echo "(no env)"
+            echo
+            echo "########## 构建错误 ##########"
+            grep -n -i -E '(error:| error |failed|Could not resolve)' build.log 2>/dev/null | head -n 60 || echo "(no build.log)"
+            echo
+            echo "########## 构建日志尾部 ##########"
+            tail -n 120 build.log 2>/dev/null || echo "(no build.log)"
+          } > ci/report.txt
+          wc -l ci/report.txt
           git config user.name "ci-bot"
           git config user.email "ci-bot@users.noreply.github.com"
-          git checkout -b ci-log
-          git add -f ci/last-build.log
-          git commit -m "ci: build log for ${{ github.sha }}" || true
-          git push -f origin ci-log
+          git checkout -b ci-report
+          git add -f ci/report.txt
+          git commit -m "ci: report for ${{ github.sha }}" || true
+          git push -f origin ci-report
 
-      - name: Fail the job if the build failed
-        if: steps.build.outcome == 'failure'
+      - name: Fail job if build failed
+        if: steps.build.outcome != 'success' || steps.package.outcome != 'success'
         run: exit 1
 
-      - name: Package into ipa
-        run: |
-          mkdir -p Payload
-          cp -R build/Build/Products/Release-iphoneos/Ledger.app Payload/
-          zip -qry Ledger-unsigned.ipa Payload
-
       - uses: actions/upload-artifact@v4
+        if: steps.package.outcome == 'success'
         with:
           name: Ledger-unsigned-ipa
           path: Ledger-unsigned.ipa
-          retention-days: 7
-
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: build-log
-          path: build.log
           retention-days: 7
