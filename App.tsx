@@ -1,19 +1,39 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { TabBar, Tab } from './src/components/TabBar';
 import { EntrySheet } from './src/components/EntrySheet';
+import { ImportSheet } from './src/components/ImportSheet';
 import { LedgerScreen } from './src/screens/LedgerScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { loadEntries, saveEntries } from './src/storage';
 import { Entry, categoryOf } from './src/types';
+import type { ParsedEntry } from './src/import/parse';
+import { makeId } from './src/id';
 import { formatAmount, monthOf, todayISO } from './src/money';
 import { palette, num, radius, space, type } from './src/theme';
 
 /** 删掉的那笔 + 它原来的位置，用于撤销 */
 type PendingUndo = { entry: Entry; index: number };
+
+/** 从 ledger://import?text=... 里取文字；顺便把 + 还原成空格。 */
+function readTextParam(url: string): string | null {
+  const q = url.indexOf('?');
+  if (q === -1) return null;
+  for (const pair of url.slice(q + 1).split('&')) {
+    const [key, value = ''] = pair.split('=');
+    if (key === 'text' || key === 't') {
+      try {
+        return decodeURIComponent(value.replace(/\+/g, ' '));
+      } catch {
+        return value;
+      }
+    }
+  }
+  return null;
+}
 
 function LedgerApp() {
   const insets = useSafeAreaInsets();
@@ -24,6 +44,8 @@ function LedgerApp() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Entry | null>(null);
   const [pendingUndo, setPendingUndo] = useState<PendingUndo | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState('');
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -93,6 +115,38 @@ function LedgerApp() {
     setPendingUndo(null);
   };
 
+  // 快捷指令或其他 App 通过 ledger://import?text=... 把识别出的文字送进来
+  useEffect(() => {
+    const open = (url: string | null | undefined) => {
+      if (!url || !/^ledger:\/\//i.test(url)) return;
+      if (!/(import|add)/i.test(url)) return;
+      setImportText(readTextParam(url) ?? '');
+      setImportOpen(true);
+    };
+    void Linking.getInitialURL().then(open);
+    const subscription = Linking.addEventListener('url', (event) => open(event.url));
+    return () => subscription.remove();
+  }, []);
+
+  const handleImport = (list: ParsedEntry[]) => {
+    if (!list.length) return;
+    const base = Date.now();
+    const added: Entry[] = list.map((item, index) => ({
+      id: `${makeId()}-${index}`,
+      kind: item.kind,
+      amount: item.amount,
+      categoryId: item.categoryId,
+      note: item.note,
+      date: item.date,
+      createdAt: base + index,
+    }));
+    setEntries((prev) => [...prev, ...added]);
+
+    // 跳到最早那笔所在的月份，否则「导入成功却看不见」
+    const earliest = added.reduce((min, e) => (e.date < min ? e.date : min), added[0].date);
+    setMonth(monthOf(earliest));
+  };
+
   useEffect(() => () => {
     if (undoTimer.current) clearTimeout(undoTimer.current);
   }, []);
@@ -109,6 +163,10 @@ function LedgerApp() {
               onMonthChange={setMonth}
               onEdit={openEdit}
               onDelete={handleDelete}
+              onOpenImport={() => {
+                setImportText('');
+                setImportOpen(true);
+              }}
             />
           ) : (
             <StatsScreen entries={entries} month={month} onMonthChange={setMonth} />
@@ -140,6 +198,14 @@ function LedgerApp() {
         onSave={handleSave}
         onDelete={handleDelete}
         onClose={() => setSheetOpen(false)}
+      />
+
+      <ImportSheet
+        visible={importOpen}
+        initialText={importText}
+        existing={entries}
+        onImport={handleImport}
+        onClose={() => setImportOpen(false)}
       />
     </View>
   );

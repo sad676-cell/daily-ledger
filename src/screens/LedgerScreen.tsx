@@ -20,9 +20,17 @@ type Props = {
   onMonthChange: (month: string) => void;
   onEdit: (entry: Entry) => void;
   onDelete: (id: string) => void;
+  onOpenImport: () => void;
 };
 
-export function LedgerScreen({ entries, month, onMonthChange, onEdit, onDelete }: Props) {
+export function LedgerScreen({
+  entries,
+  month,
+  onMonthChange,
+  onEdit,
+  onDelete,
+  onOpenImport,
+}: Props) {
   /** 当前左滑打开的那一行；同时只能有一行开着 */
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -94,7 +102,18 @@ export function LedgerScreen({ entries, month, onMonthChange, onEdit, onDelete }
         <View>
           <View style={styles.topBar}>
             <Text style={[type.caption, styles.eyebrow]}>账本</Text>
-            <MonthStepper month={month} onChange={onMonthChange} />
+            <View style={styles.topBarRight}>
+              <Pressable
+                onPress={onOpenImport}
+                accessibilityRole="button"
+                accessibilityLabel="导入账单文字"
+                hitSlop={10}
+                style={({ pressed }) => [styles.importButton, pressed && styles.importButtonPressed]}
+              >
+                <Ionicons name="scan-outline" size={18} color={palette.ink3} />
+              </Pressable>
+              <MonthStepper month={month} onChange={onMonthChange} />
+            </View>
           </View>
 
           <View style={styles.hero}>
@@ -226,6 +245,21 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     color: palette.ink3,
+  },
+  topBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+  },
+  importButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+  },
+  importButtonPressed: {
+    backgroundColor: palette.hairSoft,
   },
   hero: {
     backgroundColor: palette.surface,
