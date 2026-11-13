@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MonthStepper } from '../components/MonthStepper';
@@ -29,6 +29,20 @@ export function LedgerScreen({ entries, month, onMonthChange, onEdit, onDelete }
   useEffect(() => {
     setOpenId(null);
   }, [month]);
+
+  // 用 useCallback 稳住引用，配合 memo 的行组件，开合时只重渲染受影响的行
+  const handleOpen = useCallback((id: string) => setOpenId(id), []);
+  const handleClose = useCallback(
+    (id: string) => setOpenId((cur) => (cur === id ? null : cur)),
+    [],
+  );
+  const handleDelete = useCallback(
+    (id: string) => {
+      setOpenId(null);
+      onDelete(id);
+    },
+    [onDelete],
+  );
 
   const monthEntries = useMemo(
     () => entries.filter((e) => e.date.startsWith(month)),
@@ -111,50 +125,16 @@ export function LedgerScreen({ entries, month, onMonthChange, onEdit, onDelete }
         </View>
       )}
       onScrollBeginDrag={() => setOpenId(null)}
-      renderItem={({ item }) => {
-        const category = categoryOf(item.categoryId);
-        const isIncome = item.kind === 'income';
-        const sub = [item.note, item.expr].filter(Boolean).join('  ·  ');
-        return (
-          <SwipeRow
-            open={openId === item.id}
-            onOpen={() => setOpenId(item.id)}
-            onClose={() => setOpenId((cur) => (cur === item.id ? null : cur))}
-            onDelete={() => {
-              setOpenId(null);
-              onDelete(item.id);
-            }}
-          >
-            <Pressable
-              onPress={() => {
-                setOpenId(null);
-                onEdit(item);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`${category.name} ${formatAmount(item.amount)} 元`}
-              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            >
-              <View style={styles.rowIcon}>
-                <Ionicons name={category.icon} size={16} color={palette.ink2} />
-              </View>
-              <View style={styles.rowBody}>
-                <Text style={[type.body, styles.rowTitle]} numberOfLines={1}>
-                  {category.name}
-                </Text>
-                {sub && (
-                  <Text style={[type.small, styles.rowNote]} numberOfLines={1}>
-                    {sub}
-                  </Text>
-                )}
-              </View>
-              <Text style={[type.body, num, styles.rowAmount, isIncome && styles.rowAmountIncome]}>
-                {isIncome ? '+' : '−'}
-                {formatAmount(item.amount)}
-              </Text>
-            </Pressable>
-          </SwipeRow>
-        );
-      }}
+      renderItem={({ item }) => (
+        <LedgerRow
+          entry={item}
+          open={openId === item.id}
+          onOpen={handleOpen}
+          onClose={handleClose}
+          onEdit={onEdit}
+          onDelete={handleDelete}
+        />
+      )}
       ListEmptyComponent={
         <View style={styles.empty}>
           <Ionicons name="receipt-outline" size={32} color={palette.ink3} />
@@ -167,6 +147,70 @@ export function LedgerScreen({ entries, month, onMonthChange, onEdit, onDelete }
     />
   );
 }
+
+type RowProps = {
+  entry: Entry;
+  open: boolean;
+  onOpen: (id: string) => void;
+  onClose: (id: string) => void;
+  onEdit: (entry: Entry) => void;
+  onDelete: (id: string) => void;
+};
+
+/** 单行单独 memo：滑开/收起时不会牵动整张列表重渲染 */
+const LedgerRow = memo(function LedgerRow({
+  entry,
+  open,
+  onOpen,
+  onClose,
+  onEdit,
+  onDelete,
+}: RowProps) {
+  const category = categoryOf(entry.categoryId);
+  const isIncome = entry.kind === 'income';
+  const sub = [entry.note, entry.expr].filter(Boolean).join('  ·  ');
+
+  return (
+    <SwipeRow
+      open={open}
+      onOpen={() => onOpen(entry.id)}
+      onClose={() => onClose(entry.id)}
+      onDelete={() => onDelete(entry.id)}
+    >
+      <Pressable
+        onPress={() => {
+          // 已经滑开时，点一下只收起，不跳编辑页
+          if (open) {
+            onClose(entry.id);
+            return;
+          }
+          onEdit(entry);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`${category.name} ${formatAmount(entry.amount)} 元`}
+        style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      >
+        <View style={styles.rowIcon}>
+          <Ionicons name={category.icon} size={16} color={palette.ink2} />
+        </View>
+        <View style={styles.rowBody}>
+          <Text style={[type.body, styles.rowTitle]} numberOfLines={1}>
+            {category.name}
+          </Text>
+          {sub && (
+            <Text style={[type.small, styles.rowNote]} numberOfLines={1}>
+              {sub}
+            </Text>
+          )}
+        </View>
+        <Text style={[type.body, num, styles.rowAmount, isIncome && styles.rowAmountIncome]}>
+          {isIncome ? '+' : '−'}
+          {formatAmount(entry.amount)}
+        </Text>
+      </Pressable>
+    </SwipeRow>
+  );
+});
 
 const styles = StyleSheet.create({
   content: {

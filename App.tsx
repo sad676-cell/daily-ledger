@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { TabBar, Tab } from './src/components/TabBar';
@@ -146,9 +147,11 @@ function LedgerApp() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <LedgerApp />
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <SafeAreaProvider>
+        <LedgerApp />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

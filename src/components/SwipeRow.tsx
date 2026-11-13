@@ -1,119 +1,100 @@
-import { ReactNode, useEffect, useMemo, useRef } from 'react';
-import {
-  Animated,
-  Easing,
-  PanResponder,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { palette, type } from '../theme';
 
 /** 露出的删除按钮宽度 */
 const ACTION_W = 80;
-/** 一路滑到底（超过这个距离）松手就直接删，不用再点 */
+/** 一路滑到底（超过这个距离）松手就直接删 */
 const FULL_SWIPE = ACTION_W + 96;
+
+const SPRING = { damping: 40, stiffness: 460, mass: 0.9, overshootClamping: true };
 
 type Props = {
   children: ReactNode;
-  /** 由父级统一管理，保证同时只有一行是打开的 */
+  /** 由父级统一管理，保证同时只有一行打开 */
   open: boolean;
   onOpen: () => void;
   onClose: () => void;
   onDelete: () => void;
 };
 
+/**
+ * 左滑删除行。
+ * 手势跑在 UI 线程（RNGH + Reanimated），拖动过程不过 JS bridge，
+ * 所以跟手是 120Hz 的，不会因为 JS 线程忙而卡顿。
+ */
 export function SwipeRow({ children, open, onOpen, onClose, onDelete }: Props) {
-  const tx = useRef(new Animated.Value(0)).current;
-  /** 手势开始时行的位置，跟手过程中 + dx 得到实时位置 */
-  const startX = useRef(0);
-  const current = useRef(0);
-  const startedOpen = useRef(false);
+  const translate = useSharedValue(0);
+  const startX = useSharedValue(0);
+  const isOpen = useSharedValue(open);
 
-  // PanResponder 只创建一次，回调通过 ref 拿最新的值，避免闭包读到旧状态
-  const openRef = useRef(open);
-  openRef.current = open;
   const cb = useRef({ onOpen, onClose, onDelete });
   cb.current = { onOpen, onClose, onDelete };
 
-  const settle = (to: number, notify = true) => {
-    current.current = to;
-    Animated.timing(tx, {
-      toValue: to,
-      duration: 190,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-    if (!notify) return;
-    if (to === 0) cb.current.onClose();
-    else cb.current.onOpen();
-  };
+  // 传给 runOnJS 的必须是稳定引用，否则每次渲染都会重新建 worklet
+  const fireOpen = useCallback(() => cb.current.onOpen(), []);
+  const fireClose = useCallback(() => cb.current.onClose(), []);
+  const fireDelete = useCallback(() => cb.current.onDelete(), []);
 
-  // 外部关掉（打开另一行、切换月份、开始滚动列表）
+  // 外部改变 open（点别的行、切月份、滚动）时同步位置
   useEffect(() => {
+    isOpen.value = open;
     const target = open ? -ACTION_W : 0;
-    if (Math.abs(current.current - target) < 0.5) return;
-    current.current = target;
-    Animated.timing(tx, {
-      toValue: target,
-      duration: 190,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-  }, [open, tx]);
+    translate.value = withSpring(target, SPRING);
+  }, [open, isOpen, translate]);
 
   const pan = useMemo(
     () =>
-      PanResponder.create({
-        // 已经滑开时，点一下这一行应该先收起，而不是进编辑页
-        onStartShouldSetPanResponderCapture: () => openRef.current,
-        // 只有明确的横向滑动才从子级（Pressable）手里抢走手势，不影响竖向滚动
-        onMoveShouldSetPanResponderCapture: (_e, g) =>
-          Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6,
-        onPanResponderGrant: () => {
-          startedOpen.current = openRef.current;
-          tx.stopAnimation((v) => {
-            startX.current = v;
-            current.current = v;
-          });
-        },
-        onPanResponderMove: (_e, g) => {
-          const raw = startX.current + g.dx;
-          // 右边到头是 0（露出一点点阻尼），左边最多再多拖 40
-          const next = Math.min(0, Math.max(raw, -FULL_SWIPE - 40));
-          current.current = next;
-          tx.setValue(next);
-        },
-        onPanResponderRelease: (_e, g) => {
-          const cur = current.current;
-          const moved = Math.abs(g.dx) > 6 || Math.abs(g.dy) > 6;
+      Gesture.Pan()
+        // 横向超过 12px 才激活，纵向多一点就放弃，避免和列表滚动打架
+        .activeOffsetX([-12, 12])
+        .failOffsetY([-14, 14])
+        .onBegin(() => {
+          startX.value = isOpen.value ? -ACTION_W : translate.value;
+        })
+        .onUpdate((e) => {
+          const raw = startX.value + e.translationX;
+          // 右边到头 0；左边允许拉过头 40 再回弹
+          translate.value = Math.min(0, Math.max(raw, -(FULL_SWIPE + 40)));
+        })
+        .onEnd((e) => {
+          const cur = translate.value;
 
-          // 滑开后轻点一下：收起
-          if (!moved && startedOpen.current) {
-            settle(0);
-            return;
-          }
-
-          // 一路滑到底：直接删掉
+          // 一路滑到底：直接删
           if (cur <= -FULL_SWIPE) {
-            current.current = 0;
-            tx.setValue(0);
-            cb.current.onDelete();
+            translate.value = withSpring(0, SPRING);
+            isOpen.value = false;
+            runOnJS(fireDelete)();
             return;
           }
 
-          const flingLeft = g.vx < -0.35;
-          const flingRight = g.vx > 0.35;
-          settle(!flingRight && (flingLeft || cur < -ACTION_W / 2) ? -ACTION_W : 0);
-        },
-        onPanResponderTerminate: () => {
-          settle(current.current < -ACTION_W / 2 ? -ACTION_W : 0);
-        },
-      }),
-    [tx],
+          const flingLeft = e.velocityX < -350;
+          const flingRight = e.velocityX > 350;
+          const shouldOpen = !flingRight && (flingLeft || cur < -ACTION_W / 2);
+
+          translate.value = withSpring(shouldOpen ? -ACTION_W : 0, SPRING);
+          isOpen.value = shouldOpen;
+          runOnJS(shouldOpen ? fireOpen : fireClose)();
+        })
+        .onFinalize(() => {
+          // 被系统打断时也要回到合理位置
+          const target = isOpen.value ? -ACTION_W : 0;
+          translate.value = withSpring(target, SPRING);
+        }),
+    [fireClose, fireDelete, fireOpen, isOpen, startX, translate],
   );
+
+  const contentStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translate.value }],
+  }));
 
   return (
     <View style={styles.wrap}>
@@ -129,12 +110,9 @@ export function SwipeRow({ children, open, onOpen, onClose, onDelete }: Props) {
         </Pressable>
       </View>
 
-      <Animated.View
-        style={[styles.content, { transform: [{ translateX: tx }] }]}
-        {...pan.panHandlers}
-      >
-        {children}
-      </Animated.View>
+      <GestureDetector gesture={pan}>
+        <Animated.View style={[styles.content, contentStyle]}>{children}</Animated.View>
+      </GestureDetector>
     </View>
   );
 }
