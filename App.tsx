@@ -15,8 +15,8 @@ import { makeId } from './src/id';
 import { formatAmount, monthOf, todayISO } from './src/money';
 import { palette, num, radius, space, type } from './src/theme';
 
-/** 删掉的那笔 + 它原来的位置，用于撤销 */
-type PendingUndo = { entry: Entry; index: number };
+/** 删掉的几笔 + 它们原来的位置，用于撤销。单笔删除就是长度为 1 的特例 */
+type PendingUndo = { items: Array<{ entry: Entry; index: number }> };
 
 /** 从 ledger://import?text=... 里取文字；顺便把 + 还原成空格。 */
 function readTextParam(url: string): string | null {
@@ -86,26 +86,43 @@ function LedgerApp() {
     setMonth((current) => (entry.date.startsWith(current) ? current : monthOf(entry.date)));
   };
 
-  const handleDelete = (id: string) => {
-    const index = entries.findIndex((e) => e.id === id);
-    if (index === -1) return;
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+  /**
+   * 删除一笔或多笔。撤销时按原索引升序插回去，
+   * 所以「恢复后的顺序」和删除前完全一致。
+   */
+  const handleDeleteMany = (ids: string[]) => {
+    if (!ids.length) return;
+    const wanted = new Set(ids);
+    const items = entries
+      .map((entry, index) => ({ entry, index }))
+      .filter((item) => wanted.has(item.entry.id));
+    if (!items.length) return;
 
-    // 删错了还能在 5 秒内撤回；记账数据宁可多一步「撤销」，不要一步「永久」。
-    setPendingUndo({ entry: entries[index], index });
+    setEntries((prev) => prev.filter((e) => !wanted.has(e.id)));
+
+    // 记账数据宁可多一步「撤销」，不要一步「永久」
+    setPendingUndo({ items });
     if (undoTimer.current) clearTimeout(undoTimer.current);
-    undoTimer.current = setTimeout(() => {
-      undoTimer.current = null;
-      setPendingUndo(null);
-    }, 5000);
+    undoTimer.current = setTimeout(
+      () => {
+        undoTimer.current = null;
+        setPendingUndo(null);
+      },
+      // 一次删好几笔时多给几秒反悔
+      items.length > 1 ? 8000 : 5000,
+    );
   };
+
+  const handleDelete = (id: string) => handleDeleteMany([id]);
 
   const undoDelete = () => {
     if (!pendingUndo) return;
-    const { entry, index } = pendingUndo;
+    const items = [...pendingUndo.items].sort((a, b) => a.index - b.index);
     setEntries((prev) => {
       const next = [...prev];
-      next.splice(Math.min(index, next.length), 0, entry);
+      for (const item of items) {
+        next.splice(Math.min(item.index, next.length), 0, item.entry);
+      }
       return next;
     });
     if (undoTimer.current) {
@@ -114,6 +131,14 @@ function LedgerApp() {
     }
     setPendingUndo(null);
   };
+
+  const undoLabel = pendingUndo
+    ? pendingUndo.items.length === 1
+      ? `已删除 ${categoryOf(pendingUndo.items[0].entry.categoryId).name}${
+          pendingUndo.items[0].entry.kind === 'income' ? ' +' : ' −'
+        }${formatAmount(pendingUndo.items[0].entry.amount)}`
+      : `已删除 ${pendingUndo.items.length} 笔`
+    : '';
 
   // 快捷指令或其他 App 通过 ledger://import?text=... 把识别出的文字送进来
   useEffect(() => {
@@ -163,6 +188,7 @@ function LedgerApp() {
               onMonthChange={setMonth}
               onEdit={openEdit}
               onDelete={handleDelete}
+              onDeleteMany={handleDeleteMany}
               onOpenImport={() => {
                 setImportText('');
                 setImportOpen(true);
@@ -181,9 +207,7 @@ function LedgerApp() {
       {pendingUndo ? (
         <View style={[styles.toast, { bottom: 72 + insets.bottom }]}>
           <Text style={[type.small, styles.toastText]} numberOfLines={1}>
-            已删除 {categoryOf(pendingUndo.entry.categoryId).name}
-            {pendingUndo.entry.kind === 'income' ? ' +' : ' −'}
-            {formatAmount(pendingUndo.entry.amount)}
+            {undoLabel}
           </Text>
           <Pressable onPress={undoDelete} accessibilityRole="button" hitSlop={10}>
             <Text style={[type.small, styles.toastAction]}>撤销</Text>

@@ -142,7 +142,18 @@ console.log('\n[7] 空输入 / 无关文字');
   check('0 笔', r.entries.length === 0, `${r.entries.length} 笔`);
 }
 
-console.log('\n[8] 把 Vision 的零散识别结果拼回行（原生 OCR 的出口）');
+console.log('\n[8] 认不出分类时默认「餐饮」');
+{
+  const r = parseBill(['11月11日 星期三', '老王 -22'], { today: TODAY });
+  check('默认落到餐饮', r.entries[0]?.categoryId === 'food', r.entries[0]?.categoryId ?? 'none');
+  check('给一句提示', r.warnings.some((w) => w.includes('餐饮')), r.warnings.join(' | '));
+
+  const inc = parseBill(['11月11日 星期三', '退款 +50'], { today: TODAY });
+  check('收入仍然落到「其他」', inc.entries[0]?.categoryId === 'other-in', inc.entries[0]?.categoryId ?? 'none');
+  check('收入类型没被判错', inc.entries[0]?.kind === 'income', inc.entries[0]?.kind ?? 'none');
+}
+
+console.log('\n[9] 把 Vision 的零散识别结果拼回行（原生 OCR 的出口）');
 {
   const H = 26;
   const box = (text: string, x: number, y: number, width: number) => ({

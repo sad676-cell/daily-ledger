@@ -171,6 +171,9 @@ const CATEGORY_KEYWORDS: Array<[RegExp, string]> = [
 
 const INCOME_IDS = new Set(INCOME_CATEGORIES.map((c) => c.id));
 
+/** 认不出分类时落到「餐饮」：截图导入的场景绝大多数是吃喝，落到「其他」还得逐笔改 */
+const FALLBACK_EXPENSE_ID = 'food';
+
 /** 图上直接印着分类名时优先取它（账本截图最准），否则退回关键词表。 */
 function guessCategory(text: string, kind: Kind, warnings: { unknown: number }): string {
   const pool = kind === 'income' ? INCOME_CATEGORIES : null;
@@ -182,7 +185,7 @@ function guessCategory(text: string, kind: Kind, warnings: { unknown: number }):
   }
   if (/工资|薪|奖金|兼职|报销|入账/.test(text)) return 'salary';
   warnings.unknown += 1;
-  return kind === 'income' ? 'other-in' : 'other';
+  return kind === 'income' ? 'other-in' : FALLBACK_EXPENSE_ID;
 }
 
 /* ---------------- 结构识别 ---------------- */
@@ -249,7 +252,7 @@ function parsePayment(lines: string[], today: string, warnings: string[]): Parse
 
   const unknown = { unknown: 0 };
   const categoryId = guessCategory(`${merchant} ${lines.join(' ')}`, 'expense', unknown);
-  if (unknown.unknown) warnings.push('分类没认出来，已归入「其他」');
+  if (unknown.unknown) warnings.push('分类没认出来，已归入「餐饮」');
 
   const entries: ParsedEntry[] = [
     {
@@ -399,7 +402,9 @@ function parseLedger(lines: string[], today: string, warnings: string[]): ParseR
     }
   }
 
-  if (unknown.unknown) warnings.push(`${unknown.unknown} 笔没认出分类，已归入「其他」`);
+  if (unknown.unknown) {
+    warnings.push(`${unknown.unknown} 笔没认出分类，支出已归入「餐饮」、收入已归入「其他」`);
+  }
   if (!entries.length) warnings.push('没识别到任何一笔');
 
   return { source: 'ledger', entries, warnings };

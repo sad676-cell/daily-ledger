@@ -16,6 +16,8 @@ export const palette = {
   accent: '#B4472F',
   accentInk: '#FFF7F3',
   accentWash: '#F2E1D9',
+  /** 朱砂红的浅一档，只用于墨色底上的危险操作（选中条里的「删除」） */
+  accentOnInk: '#E28873',
   income: '#3F6B52',
   incomeWash: '#E4EDE6',
 };
