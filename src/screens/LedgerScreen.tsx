@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MonthStepper } from '../components/MonthStepper';
+import { SwipeRow } from '../components/SwipeRow';
 import { Entry, categoryOf } from '../types';
 import { dayLabel, formatAmount } from '../money';
 import { palette, num, radius, space, type } from '../theme';
@@ -18,9 +19,17 @@ type Props = {
   month: string;
   onMonthChange: (month: string) => void;
   onEdit: (entry: Entry) => void;
+  onDelete: (id: string) => void;
 };
 
-export function LedgerScreen({ entries, month, onMonthChange, onEdit }: Props) {
+export function LedgerScreen({ entries, month, onMonthChange, onEdit, onDelete }: Props) {
+  /** 当前左滑打开的那一行；同时只能有一行开着 */
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setOpenId(null);
+  }, [month]);
+
   const monthEntries = useMemo(
     () => entries.filter((e) => e.date.startsWith(month)),
     [entries, month],
@@ -101,35 +110,49 @@ export function LedgerScreen({ entries, month, onMonthChange, onEdit }: Props) {
           </Text>
         </View>
       )}
+      onScrollBeginDrag={() => setOpenId(null)}
       renderItem={({ item }) => {
         const category = categoryOf(item.categoryId);
         const isIncome = item.kind === 'income';
         const sub = [item.note, item.expr].filter(Boolean).join('  ·  ');
         return (
-          <Pressable
-            onPress={() => onEdit(item)}
-            accessibilityRole="button"
-            accessibilityLabel={`${category.name} ${formatAmount(item.amount)} 元`}
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+          <SwipeRow
+            open={openId === item.id}
+            onOpen={() => setOpenId(item.id)}
+            onClose={() => setOpenId((cur) => (cur === item.id ? null : cur))}
+            onDelete={() => {
+              setOpenId(null);
+              onDelete(item.id);
+            }}
           >
-            <View style={styles.rowIcon}>
-              <Ionicons name={category.icon} size={16} color={palette.ink2} />
-            </View>
-            <View style={styles.rowBody}>
-              <Text style={[type.body, styles.rowTitle]} numberOfLines={1}>
-                {category.name}
-              </Text>
-              {sub && (
-                <Text style={[type.small, styles.rowNote]} numberOfLines={1}>
-                  {sub}
+            <Pressable
+              onPress={() => {
+                setOpenId(null);
+                onEdit(item);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`${category.name} ${formatAmount(item.amount)} 元`}
+              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            >
+              <View style={styles.rowIcon}>
+                <Ionicons name={category.icon} size={16} color={palette.ink2} />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={[type.body, styles.rowTitle]} numberOfLines={1}>
+                  {category.name}
                 </Text>
-              )}
-            </View>
-            <Text style={[type.body, num, styles.rowAmount, isIncome && styles.rowAmountIncome]}>
-              {isIncome ? '+' : '−'}
-              {formatAmount(item.amount)}
-            </Text>
-          </Pressable>
+                {sub && (
+                  <Text style={[type.small, styles.rowNote]} numberOfLines={1}>
+                    {sub}
+                  </Text>
+                )}
+              </View>
+              <Text style={[type.body, num, styles.rowAmount, isIncome && styles.rowAmountIncome]}>
+                {isIncome ? '+' : '−'}
+                {formatAmount(item.amount)}
+              </Text>
+            </Pressable>
+          </SwipeRow>
         );
       }}
       ListEmptyComponent={
