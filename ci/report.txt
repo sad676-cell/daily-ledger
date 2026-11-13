@@ -1,0 +1,255 @@
+########## 结果 ##########
+env       = success
+pick      = success
+jsdeps    = success
+prebuild  = success
+pods      = success
+build     = success
+package   = success
+publishipa= success
+
+########## 环境 ##########
+date=2026-11-13T03:01:47Z
+sha=34a5ee33c00dcc4d0e72d4be27bdecf044591a92
+--- xcodes ---
+/Applications/Xcode_26.0.1.app
+/Applications/Xcode_26.0.app
+/Applications/Xcode_26.1.1.app
+/Applications/Xcode_26.1.app
+/Applications/Xcode_26.2.0.app
+/Applications/Xcode_26.2.app
+/Applications/Xcode_26.3.0.app
+/Applications/Xcode_26.3.app
+/Applications/Xcode_26.4.1.app
+/Applications/Xcode_26.4.app
+/Applications/Xcode_26.5.0.app
+/Applications/Xcode_26.5.app
+/Applications/Xcode_26.6.0.app
+/Applications/Xcode_26.6.app
+/Applications/Xcode.app
+--- default ---
+Xcode 26.6
+Build version 17F113
+swift-driver version: 1.148.6 Apple Swift version 6.3.3 (swiftlang-6.3.3.1.3 clang-2100.1.1.101)
+Target: arm64-apple-macosx26.0
+v24.22.2
+11.19.1
+--- after switch (/Applications/Xcode_26.6.0.app) ---
+Xcode 26.6
+Build version 17F113
+swift-driver version: 1.148.6 Apple Swift version 6.3.3 (swiftlang-6.3.3.1.3 clang-2100.1.1.101)
+Target: arm64-apple-macosx26.0
+
+########## npm 日志 ##########
+--- tail ---
+
+added 500 packages in 14s
+
+########## prebuild 日志 ##########
+--- tail ---
+- Creating native directory (./ios)
+✔ Created native directory
+- Updating package.json
+✔ Updated package.json
+- Running prebuild
+» ios: name: "ios.infoPlist.CFBundleDisplayName" is set in the config. Ignoring abstract property "name": Ledger
+- Running prebuild
+» ios: ios.backgroundColor: Install expo-system-ui to enable this feature https://docs.expo.dev/versions/latest/sdk/system-ui/
+- Running prebuild
+✔ Finished prebuild
+
+########## pods 日志 ##########
+[Expo-precompiled] RNReanimated: building from source (prebuilt tarball not found)
+[Expo-precompiled] react-native-safe-area-context: building from source (prebuilt tarball not found)
+[Expo-precompiled] RNWorklets: building from source (prebuilt tarball not found)
+[Expo-precompiled] RNCAsyncStorage: building from source (prebuilt tarball not found)
+Installing React-jserrorhandler (0.88.1)
+warning: The @ExpoModule class 'CoreModule' (/Users/runner/work/daily-ledger/daily-ledger/node_modules/expo-modules-core/ios/Core/Modules/CoreModule.swift) is internal, so the generated modules provider cannot reference it. Declare it public to link it automatically, or use a lower access level such as private to opt it out of linking.
+--- tail ---
+Setting CLANG_CXX_LANGUAGE_STANDARD to c++20 on /Users/runner/work/daily-ledger/daily-ledger/ios/Ledger.xcodeproj
+
+==================== DEPRECATION NOTICE =====================
+Calling `pod install` directly is deprecated in React Native
+because we are moving away from Cocoapods toward alternative
+solutions to build the project.
+* If you are using Expo, please run:
+`npx expo run:ios`
+* If you are using the Community CLI, please run:
+`yarn ios`
+=============================================================
+
+Pod install took 108 [s] to run
+Integrating client project
+
+[!] Please close any current Xcode sessions and use `Ledger.xcworkspace` for this project from now on.
+warning: The @ExpoModule class 'CoreModule' (/Users/runner/work/daily-ledger/daily-ledger/node_modules/expo-modules-core/ios/Core/Modules/CoreModule.swift) is internal, so the generated modules provider cannot reference it. Declare it public to link it automatically, or use a lower access level such as private to opt it out of linking.
+[Expo] Installing the build script for target Ledger
+Pod installation complete! There are 109 dependencies from the Podfile and 108 total pods installed.
+[Expo-precompiled] Precompiled modules:
+[Expo-precompiled]   📦 ExpoFileSystem (58.0.13)
+[Expo-precompiled]   📦 ExpoFont (58.0.12)
+[Expo-precompiled]   📦 ExpoModulesCore (58.1.0)
+[Expo-precompiled]   📦 ExpoModulesWorklets (58.1.0)
+[Expo-precompiled]   📦 ExpoPrint (58.0.9)
+[Expo] Disabling SWIFT_EMIT_MODULE_INTERFACE for pod targets (prebuilt React compatibility)
+[Expo] Ensured modular React header flags on 0 xcconfig(s)
+[Expo-precompiled] Looking for ExpoModulesCore.xcframework at: /Users/runner/work/daily-ledger/daily-ledger/ios/Pods/ExpoModulesCore/ExpoModulesCore.xcframework
+[Expo-precompiled] Adding ExpoModulesJSI header search paths to all targets
+[Expo-precompiled] Adding ExpoModulesWorklets header search paths to ExpoModulesWorkletsAdapter
+[Expo] Adding '[Expo] Remove duplicate codegen output' build phase to ReactCodegen
+[Expo] Raised deployment target for Expo modules matching ExpoModulesCore:
+  LedgerOcr (iOS=16.4)
+[Expo] Raised resource bundle deployment targets to match their pods: RNCAsyncStorage-RNCAsyncStorage_resources
+
+[!] ExpoFileSystem has added 2 script phases. Please inspect before executing a build. See `https://guides.cocoapods.org/syntax/podspec.html#script_phases` for more information.
+
+[!] ExpoFont has added 2 script phases. Please inspect before executing a build. See `https://guides.cocoapods.org/syntax/podspec.html#script_phases` for more information.
+
+[!] ExpoModulesCore has added 2 script phases. Please inspect before executing a build. See `https://guides.cocoapods.org/syntax/podspec.html#script_phases` for more information.
+
+[!] ExpoModulesWorklets has added 2 script phases. Please inspect before executing a build. See `https://guides.cocoapods.org/syntax/podspec.html#script_phases` for more information.
+
+[!] ExpoPrint has added 2 script phases. Please inspect before executing a build. See `https://guides.cocoapods.org/syntax/podspec.html#script_phases` for more information.
+
+[!] React-Core-prebuilt has added 1 script phase. Please inspect before executing a build. See `https://guides.cocoapods.org/syntax/podspec.html#script_phases` for more information.
+
+[!] ReactNativeDependencies has added 1 script phase. Please inspect before executing a build. See `https://guides.cocoapods.org/syntax/podspec.html#script_phases` for more information.
+
+[!] hermes-engine has added 1 script phase. Please inspect before executing a build. See `https://guides.cocoapods.org/syntax/podspec.html#script_phases` for more information.
+
+########## 构建错误 ##########
+21986:/Users/runner/work/daily-ledger/daily-ledger/node_modules/expo-image-picker/ios/ImagePickerExceptions.swift:47:22: warning: class 'FailedToCreateGifException' must restate inherited '@unchecked Sendable' conformance
+21987:internal final class FailedToCreateGifException: Exception {
+21990:/Users/runner/work/daily-ledger/daily-ledger/node_modules/expo-image-picker/ios/ImagePickerExceptions.swift:53:22: warning: class 'FailedToExportGifException' must restate inherited '@unchecked Sendable' conformance
+21991:internal final class FailedToExportGifException: Exception {
+21994:/Users/runner/work/daily-ledger/daily-ledger/node_modules/expo-image-picker/ios/ImagePickerExceptions.swift:59:22: warning: class 'FailedToWriteImageException' must restate inherited '@unchecked Sendable' conformance
+21995:internal final class FailedToWriteImageException: Exception {
+21998:/Users/runner/work/daily-ledger/daily-ledger/node_modules/expo-image-picker/ios/ImagePickerExceptions.swift:65:22: warning: class 'FailedToReadImageException' must restate inherited '@unchecked Sendable' conformance
+21999:internal final class FailedToReadImageException: Exception {
+22002:/Users/runner/work/daily-ledger/daily-ledger/node_modules/expo-image-picker/ios/ImagePickerExceptions.swift:71:22: warning: class 'FailedToReadImageDataException' must restate inherited '@unchecked Sendable' conformance
+22003:internal final class FailedToReadImageDataException: Exception {
+22006:/Users/runner/work/daily-ledger/daily-ledger/node_modules/expo-image-picker/ios/ImagePickerExceptions.swift:77:22: warning: class 'FailedToReadVideoSizeException' must restate inherited '@unchecked Sendable' conformance
+22007:internal final class FailedToReadVideoSizeException: Exception {
+22010:/Users/runner/work/daily-ledger/daily-ledger/node_modules/expo-image-picker/ios/ImagePickerExceptions.swift:83:22: warning: class 'FailedToReadVideoException' must restate inherited '@unchecked Sendable' conformance
+22011:internal final class FailedToReadVideoException: Exception {
+22014:/Users/runner/work/daily-ledger/daily-ledger/node_modules/expo-image-picker/ios/ImagePickerExceptions.swift:89:22: warning: class 'FailedToTranscodeVideoException' must restate inherited '@unchecked Sendable' conformance
+22015:internal final class FailedToTranscodeVideoException: Exception {
+22022:/Users/runner/work/daily-ledger/daily-ledger/node_modules/expo-image-picker/ios/ImagePickerExceptions.swift:101:22: warning: class 'FailedToPickVideoException' must restate inherited '@unchecked Sendable' conformance
+22023:internal final class FailedToPickVideoException: Exception {
+22026:/Users/runner/work/daily-ledger/daily-ledger/node_modules/expo-image-picker/ios/ImagePickerExceptions.swift:107:22: warning: class 'FailedToReadImageDataForBase64Exception' must restate inherited '@unchecked Sendable' conformance
+22027:internal final class FailedToReadImageDataForBase64Exception: Exception {
+22030:/Users/runner/work/daily-ledger/daily-ledger/node_modules/expo-image-picker/ios/ImagePickerExceptions.swift:113:22: warning: class 'FailedToPickLivePhotoException' must restate inherited '@unchecked Sendable' conformance
+22031:internal final class FailedToPickLivePhotoException: Exception {
+29212:16 | - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error;
+29252:16 | - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error;
+29292:16 | - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error;
+29327:16 | - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error;
+29367:16 | - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error;
+29407:16 | - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error;
+29445:16 | - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error;
+29485:16 | - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error;
+
+########## 构建日志尾部 ##########
+React.framework/RCTI18nStrings.bundle/th.lproj/Localizable.strings
+React.framework/RCTI18nStrings.bundle/th.lproj/fbt_language_pack.bin
+React.framework/RCTI18nStrings.bundle/tr.lproj/
+React.framework/RCTI18nStrings.bundle/tr.lproj/Localizable.strings
+React.framework/RCTI18nStrings.bundle/tr.lproj/fbt_language_pack.bin
+React.framework/RCTI18nStrings.bundle/uk.lproj/
+React.framework/RCTI18nStrings.bundle/uk.lproj/Localizable.strings
+React.framework/RCTI18nStrings.bundle/uk.lproj/fbt_language_pack.bin
+React.framework/RCTI18nStrings.bundle/vi.lproj/
+React.framework/RCTI18nStrings.bundle/vi.lproj/Localizable.strings
+React.framework/RCTI18nStrings.bundle/vi.lproj/fbt_language_pack.bin
+React.framework/RCTI18nStrings.bundle/zh-Hans.lproj/
+React.framework/RCTI18nStrings.bundle/zh-Hans.lproj/Localizable.strings
+React.framework/RCTI18nStrings.bundle/zh-Hans.lproj/fbt_language_pack.bin
+React.framework/RCTI18nStrings.bundle/zh-Hant-HK.lproj/
+React.framework/RCTI18nStrings.bundle/zh-Hant-HK.lproj/Localizable.strings
+React.framework/RCTI18nStrings.bundle/zh-Hant-HK.lproj/fbt_language_pack.bin
+React.framework/RCTI18nStrings.bundle/zh-Hant.lproj/
+React.framework/RCTI18nStrings.bundle/zh-Hant.lproj/Localizable.strings
+React.framework/RCTI18nStrings.bundle/zh-Hant.lproj/fbt_language_pack.bin
+React.framework/RCTI18nStrings.bundle/zu.lproj/
+React.framework/RCTI18nStrings.bundle/zu.lproj/Localizable.strings
+React.framework/RCTI18nStrings.bundle/zu.lproj/fbt_language_pack.bin
+
+sent 11982159 bytes  received 1948 bytes  57866281 bytes/sec
+total size is 11967021  speedup is 1.00
+rsync --delete -av --filter P .*.?????? --links --filter "- CVS/" --filter "- .svn/" --filter "- .git/" --filter "- .hg/" --filter "- Headers" --filter "- PrivateHeaders" --filter "- Modules" "/Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/ReactNativeDependencies/ReactNativeDependencies.framework" "/Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app/Frameworks"
+Transfer starting: 15 files
+ReactNativeDependencies.framework/
+ReactNativeDependencies.framework/Info.plist
+ReactNativeDependencies.framework/ReactNativeDependencies
+ReactNativeDependencies.framework/ReactNativeDependencies_SocketRocket.bundle/
+ReactNativeDependencies.framework/ReactNativeDependencies_SocketRocket.bundle/Info.plist
+ReactNativeDependencies.framework/ReactNativeDependencies_SocketRocket.bundle/PrivacyInfo.xcprivacy
+ReactNativeDependencies.framework/ReactNativeDependencies_boost.bundle/
+ReactNativeDependencies.framework/ReactNativeDependencies_boost.bundle/Info.plist
+ReactNativeDependencies.framework/ReactNativeDependencies_boost.bundle/PrivacyInfo.xcprivacy
+ReactNativeDependencies.framework/ReactNativeDependencies_folly.bundle/
+ReactNativeDependencies.framework/ReactNativeDependencies_folly.bundle/Info.plist
+ReactNativeDependencies.framework/ReactNativeDependencies_folly.bundle/PrivacyInfo.xcprivacy
+ReactNativeDependencies.framework/ReactNativeDependencies_glog.bundle/
+ReactNativeDependencies.framework/ReactNativeDependencies_glog.bundle/Info.plist
+ReactNativeDependencies.framework/ReactNativeDependencies_glog.bundle/PrivacyInfo.xcprivacy
+
+sent 1266597 bytes  received 270 bytes  63028208 bytes/sec
+total size is 1264299  speedup is 1.00
+rsync --delete -av --filter P .*.?????? --links --filter "- CVS/" --filter "- .svn/" --filter "- .git/" --filter "- .hg/" --filter "- Headers" --filter "- PrivateHeaders" --filter "- Modules" "/Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/XCFrameworkIntermediates/hermes-engine/Pre-built/hermesvm.framework" "/Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app/Frameworks"
+Transfer starting: 3 files
+hermesvm.framework/
+hermesvm.framework/Info.plist
+hermesvm.framework/hermesvm
+
+sent 6362087 bytes  received 70 bytes  48161672 bytes/sec
+total size is 6360907  speedup is 1.00
+
+ExtractAppIntentsMetadata (in target 'Ledger' from project 'Ledger')
+    cd /Users/runner/work/daily-ledger/daily-ledger/ios
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.mMU51b/Metal.xctoolchain --module-name Ledger --sdk-root /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk --xcode-version 17F113 --platform-family iOS --deployment-target 16.4 --bundle-identifier com.ljq471.ledger --output /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app --target-triple arm64-apple-ios16.4 --binary-file /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app/Ledger --dependency-file /Users/runner/work/daily-ledger/daily-ledger/build/Build/Intermediates.noindex/Ledger.build/Release-iphoneos/Ledger.build/Objects-normal/arm64/Ledger_dependency_info.dat --stringsdata-file /Users/runner/work/daily-ledger/daily-ledger/build/Build/Intermediates.noindex/Ledger.build/Release-iphoneos/Ledger.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/daily-ledger/daily-ledger/build/Build/Intermediates.noindex/Ledger.build/Release-iphoneos/Ledger.build/Objects-normal/arm64/Ledger.SwiftFileList --metadata-file-list /Users/runner/work/daily-ledger/daily-ledger/build/Build/Intermediates.noindex/Ledger.build/Release-iphoneos/Ledger.build/Ledger.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/daily-ledger/daily-ledger/build/Build/Intermediates.noindex/Ledger.build/Release-iphoneos/Ledger.build/Ledger.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/daily-ledger/daily-ledger/build/Build/Intermediates.noindex/Ledger.build/Release-iphoneos/Ledger.build/Objects-normal/arm64/Ledger.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-11-13 03:12:00.808 appintentsmetadataprocessor[16264:47839] Starting appintentsmetadataprocessor export
+2026-11-13 03:12:00.816 appintentsmetadataprocessor[16264:47839] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CopySwiftLibs /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app (in target 'Ledger' from project 'Ledger')
+    cd /Users/runner/work/daily-ledger/daily-ledger/ios
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app/Ledger --scan-folder /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app/Frameworks --scan-folder /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app/PlugIns --scan-folder /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app/SystemExtensions --scan-folder /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app/Extensions --platform iphoneos --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.mMU51b/Metal.xctoolchain --toolchain /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/daily-ledger/daily-ledger/build/Build/Intermediates.noindex/Ledger.build/Release-iphoneos/Ledger.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os --back-deploy-swift-span
+Ignoring --strip-bitcode because --sign was not passed
+
+AppIntentsSSUTraining (in target 'Ledger' from project 'Ledger')
+    cd /Users/runner/work/daily-ledger/daily-ledger/ios
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app/Info.plist --temp-dir-path /Users/runner/work/daily-ledger/daily-ledger/build/Build/Intermediates.noindex/Ledger.build/Release-iphoneos/Ledger.build/ssu --bundle-id com.ljq471.ledger --product-path /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app --extracted-metadata-path /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app/Metadata.appintents --metadata-file-list /Users/runner/work/daily-ledger/daily-ledger/build/Build/Intermediates.noindex/Ledger.build/Release-iphoneos/Ledger.build/Ledger.DependencyMetadataFileList --source-file /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app/Info.plist --archive-ssu-assets
+2026-11-13 03:12:00.876 appintentsnltrainingprocessor[16265:47842] Parsing options for appintentsnltrainingprocessor
+2026-11-13 03:12:00.877 appintentsnltrainingprocessor[16265:47842] Starting AppIntents SSU YAML Generation
+2026-11-13 03:12:00.884 appintentsnltrainingprocessor[16265:47842] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app (in target 'Ledger' from project 'Ledger')
+    cd /Users/runner/work/daily-ledger/daily-ledger/ios
+    builtin-RegisterExecutionPolicyException /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app
+
+Validate /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app (in target 'Ledger' from project 'Ledger')
+    cd /Users/runner/work/daily-ledger/daily-ledger/ios
+    builtin-validationUtility /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app -validate-for-store -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app (in target 'Ledger' from project 'Ledger')
+    cd /Users/runner/work/daily-ledger/daily-ledger/ios
+    /usr/bin/touch -c /Users/runner/work/daily-ledger/daily-ledger/build/Build/Products/Release-iphoneos/Ledger.app
+
+note: Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'hermes-engine' from project 'Pods')
+note: Run script build phase '[CP-User] [RNDeps] Replace React Native Dependencies for the right configuration, if needed' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ReactNativeDependencies' from project 'Pods')
+note: Run script build phase '[CP-User] [RN]Check FBReactNativeSpec' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'React-RCTFBReactNativeSpec' from project 'Pods')
+note: Run script build phase '[CP-User] [RNCore] Replace React Native Core for the right configuration, if needed' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'React-Core-prebuilt' from project 'Pods')
+note: Run script build phase '[CP-User] [Expo] Switch ExpoPrint XCFramework for build configuration' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ExpoPrint' from project 'Pods')
+note: Run script build phase '[CP-User] [Expo] Switch ExpoModulesWorklets XCFramework for build configuration' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ExpoModulesWorklets' from project 'Pods')
+note: Run script build phase '[CP-User] Build ExpoModulesJSI xcframework' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ExpoModulesJSI' from project 'Pods')
+note: Run script build phase '[CP-User] [Expo] Switch ExpoModulesCore XCFramework for build configuration' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ExpoModulesCore' from project 'Pods')
+note: Run script build phase '[CP-User] [Expo] Switch ExpoFont XCFramework for build configuration' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ExpoFont' from project 'Pods')
+note: Run script build phase '[CP-User] [Expo] Switch ExpoFileSystem XCFramework for build configuration' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'ExpoFileSystem' from project 'Pods')
+note: Run script build phase '[Expo] Configure project' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'Ledger' from project 'Ledger')
+note: Run script build phase 'Bundle React Native code and images' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'Ledger' from project 'Ledger')
+note: Run script build phase '[CP-User] Generate app.config for prebuilt Constants.manifest' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'EXConstants' from project 'Pods')
+** BUILD SUCCEEDED **
+
+
+########## 产物 ##########
+-rw-r--r--  1 runner  staff    12M Nov 13 03:12 Ledger-unsigned.ipa
