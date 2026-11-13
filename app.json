@@ -29,7 +29,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "选择账单截图，在本机识别成账目。图片不会上传。",
+          "cameraPermission": "拍小票，在本机识别成账目。照片不会上传。"
+        }
+      ]
     ]
   }
 }

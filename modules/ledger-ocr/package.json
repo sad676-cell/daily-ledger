@@ -1,0 +1,7 @@
+{
+  "name": "ledger-ocr",
+  "version": "1.0.0",
+  "description": "本地文字识别（iOS Vision 框架），给账本的截图导入用",
+  "main": "index.ts",
+  "private": true
+}

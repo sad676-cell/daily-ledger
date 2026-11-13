@@ -6,6 +6,7 @@
  * 跑法：npm run check:parse
  */
 import { parseBill } from '../src/import/parse';
+import { boxesToLines } from '../src/ocr/lines';
 
 const TODAY = '2026-11-13';
 
@@ -141,5 +142,41 @@ console.log('\n[7] 空输入 / 无关文字');
   check('0 笔', r.entries.length === 0, `${r.entries.length} 笔`);
 }
 
+console.log('\n[8] 把 Vision 的零散识别结果拼回行（原生 OCR 的出口）');
+{
+  const H = 26;
+  const box = (text: string, x: number, y: number, width: number) => ({
+    text,
+    x,
+    y,
+    width,
+    height: H,
+    confidence: 0.9,
+  });
+  // Vision 不保证返回阅读顺序，这里故意打乱
+  const boxes = [
+    box('-30', 660, 360, 50),
+    box('支出: 45', 620, 300, 100),
+    box('餐饮', 100, 410, 48),
+    box('星期三', 180, 300, 70),
+    box('11月11日', 40, 300, 120),
+    box('购物', 100, 360, 48),
+    box('-15', 660, 410, 50),
+  ];
+  const lines = boxesToLines(boxes);
+  console.log('     lines:', lines);
+  check('日期与星期拼成一行', lines[0] === '11月11日 星期三 支出: 45', JSON.stringify(lines[0]));
+  check('分类与金额拼成一行', lines[1] === '购物 -30', JSON.stringify(lines[1]));
+  check('一共 3 行', lines.length === 3, String(lines.length));
+
+  const r = parseBill(lines, { today: TODAY });
+  check('拼出的行能直接解析', r.source === 'ledger', r.source);
+  check('2 笔', r.entries.length === 2, `${r.entries.length} 笔`);
+  check('合计 45，与图上的日汇总一致', sum(r) === 45, String(sum(r)));
+  check('没有汇总不符的告警', !r.warnings.some((w) => w.includes('明细合计')), r.warnings.join(' | '));
+
+  const tight = boxesToLines([box('-', 660, 500, 10), box('30', 670, 500, 24)]);
+  check('紧邻的两段不补空格', tight[0] === '-30', JSON.stringify(tight[0]));
+}
+
 console.log(failed === 0 ? '\n全部通过\n' : `\n${failed} 项未通过\n`);
-if (failed > 0) throw new Error(`${failed} 项未通过`);

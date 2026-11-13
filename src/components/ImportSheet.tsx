@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -11,6 +12,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { boxesToLines, ocrAvailable, recognizeImage } from '../ocr';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { describeResult, parseBill, ParseResult, ParsedEntry } from '../import/parse';
 import { Entry, categoryOf } from '../types';
@@ -36,6 +39,8 @@ export function ImportSheet({ visible, initialText, existing, onImport, onClose 
   const [text, setText] = useState('');
   const [result, setResult] = useState<ParseResult | null>(null);
   const [excluded, setExcluded] = useState<Set<number>>(new Set());
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const [ocrError, setOcrError] = useState('');
 
   const known = useMemo(() => new Set(existing.map(fingerprint)), [existing]);
 
@@ -53,6 +58,8 @@ export function ImportSheet({ visible, initialText, existing, onImport, onClose 
     setText(initialText);
     setResult(null);
     setExcluded(new Set());
+    setOcrError('');
+    setOcrBusy(false);
     if (initialText.trim()) {
       run(initialText);
     }
@@ -68,6 +75,48 @@ export function ImportSheet({ visible, initialText, existing, onImport, onClose 
       if (known.has(fingerprint(e))) dup.add(i);
     });
     setExcluded(dup);
+  }
+
+  /**
+   * 选一张截图 → 本机 Vision 识别 → 拼回文字行 → 直接进预览。
+   * 识别失败或包里没有原生模块时，退回「粘贴文字」，不阻断流程。
+   */
+  async function pickImage() {
+    setOcrError('');
+    let picked: ImagePicker.ImagePickerResult;
+    try {
+      picked = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 1,
+        allowsMultipleSelection: false,
+      });
+    } catch (error) {
+      setOcrError(error instanceof Error ? error.message : '打不开相册');
+      return;
+    }
+    if (picked.canceled || !picked.assets?.length) return;
+
+    if (!ocrAvailable) {
+      setOcrError('这个安装包还不含本地识别，先粘贴文字；重新构建后就能直接选图');
+      return;
+    }
+
+    setOcrBusy(true);
+    try {
+      const boxes = await recognizeImage(picked.assets[0].uri);
+      const lines = boxesToLines(boxes);
+      if (!lines.length) {
+        setOcrError('这张图没认出文字，换一张清晰的截图试试');
+        return;
+      }
+      const joined = lines.join('\n');
+      setText(joined);
+      run(joined);
+    } catch (error) {
+      setOcrError(error instanceof Error ? error.message : '识别失败，换一张图再试');
+    } finally {
+      setOcrBusy(false);
+    }
   }
 
   const selected = useMemo(() => {
@@ -195,18 +244,47 @@ export function ImportSheet({ visible, initialText, existing, onImport, onClose 
           ) : (
             <ScrollView style={styles.flex} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
               <View style={styles.intro}>
-                <Text style={[type.title, styles.introTitle]}>把账单截图里的字贴进来</Text>
+                <Text style={[type.title, styles.introTitle]}>把账单截图变成账目</Text>
                 <Text style={[type.small, styles.introBody]}>
-                  识别在这台手机上完成，不上传。两种用法：
+                  识别只在这台手机上完成，图片不上传、也不会保存。
                 </Text>
-                <View style={styles.steps}>
-                  <Text style={[type.small, styles.step]}>
-                    1 · 用「快捷指令」里的「从图像提取文本」，识别截图后通过 ledger://import 打开这里
-                  </Text>
-                  <Text style={[type.small, styles.step]}>
-                    2 · 也可以先在别处识别出文字，复制过来粘在下面
-                  </Text>
-                </View>
+              </View>
+
+              {ocrAvailable ? (
+                <Pressable
+                  onPress={pickImage}
+                  disabled={ocrBusy}
+                  accessibilityRole="button"
+                  accessibilityLabel="从相册选一张账单截图"
+                  accessibilityState={{ disabled: ocrBusy, busy: ocrBusy }}
+                  style={({ pressed }) => [
+                    styles.primary,
+                    styles.pickButton,
+                    ocrBusy && styles.primaryDisabled,
+                    pressed && styles.primaryPressed,
+                  ]}
+                >
+                  {ocrBusy ? (
+                    <ActivityIndicator color={palette.accentInk} />
+                  ) : (
+                    <>
+                      <Ionicons name="image-outline" size={18} color={palette.accentInk} />
+                      <Text style={[type.body, styles.primaryLabel]}>从相册选截图</Text>
+                    </>
+                  )}
+                </Pressable>
+              ) : (
+                <Text style={[type.caption, styles.step]}>
+                  当前安装包不含本地识别，只能用下面的方式粘贴文字。重新构建安装后即可直接选图。
+                </Text>
+              )}
+
+              {ocrError ? <Text style={[type.caption, styles.error]}>{ocrError}</Text> : null}
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={[type.caption, styles.dividerText]}>或者粘贴文字</Text>
+                <View style={styles.dividerLine} />
               </View>
 
               <TextInput
@@ -225,13 +303,17 @@ export function ImportSheet({ visible, initialText, existing, onImport, onClose 
                 accessibilityRole="button"
                 accessibilityState={{ disabled: !text.trim() }}
                 style={({ pressed }) => [
-                  styles.primary,
+                  styles.secondary,
                   !text.trim() && styles.primaryDisabled,
                   pressed && styles.primaryPressed,
                 ]}
               >
-                <Text style={[type.body, styles.primaryLabel]}>识别</Text>
+                <Text style={[type.body, styles.secondaryLabel]}>解析这段文字</Text>
               </Pressable>
+
+              <Text style={[type.caption, styles.step]}>
+                也可以配一次快捷指令：用「从图像提取文本」识别截图，再通过 ledger://import 打开这里。
+              </Text>
             </ScrollView>
           )}
         </KeyboardAvoidingView>
@@ -335,6 +417,39 @@ const styles = StyleSheet.create({
   primaryLabel: {
     color: palette.accentInk,
     fontWeight: '600',
+  },
+  pickButton: {
+    flexDirection: 'row',
+    gap: space.sm,
+  },
+  secondary: {
+    height: 52,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: palette.hair,
+    backgroundColor: palette.surface,
+  },
+  secondaryLabel: {
+    color: palette.ink2,
+    fontWeight: '600',
+  },
+  error: {
+    color: palette.accent,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: palette.hair,
+  },
+  dividerText: {
+    color: palette.ink3,
   },
   summaryCard: {
     backgroundColor: palette.surface,
